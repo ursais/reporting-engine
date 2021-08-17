@@ -28,16 +28,11 @@ class ReportController(ReportController):
             if data.get("options"):
                 data.update(json.loads(data.pop("options")))
             if data.get("context"):
-                # Ignore 'lang' here, because the context in data is the one
-                # from the webclient *but* if the user explicitely wants to
-                # change the lang, this mechanism overwrites it.
                 data["context"] = json.loads(data["context"])
-                if data["context"].get("lang"):
-                    del data["context"]["lang"]
                 context.update(data["context"])
             context["report_name"] = reportname
 
-            xlsx = report.with_context(context).render_xlsx(docids, data=data)[0]
+            xlsx = report.with_context(context)._render_xlsx(docids, data=data)[0]
             report_file = context.get("report_file")
             if not report_file:
                 active_model = context.get("active_model", "export")
@@ -52,6 +47,4 @@ class ReportController(ReportController):
                 ("Content-Disposition", content_disposition(report_file + ".xlsx")),
             ]
             return request.make_response(xlsx, headers=xlsxhttpheaders)
-        return super(ReportController, self).report_routes(
-            reportname, docids, converter, **data
-        )
+        return super().report_routes(reportname, docids, converter, **data)

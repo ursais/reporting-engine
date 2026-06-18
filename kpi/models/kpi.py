@@ -110,9 +110,7 @@ class KPI(models.Model):
     )
     kpi_code = fields.Text(
         "KPI Code",
-        help=(
-            "SQL code must return the result as 'value' " "(i.e. 'SELECT 5 AS value')."
-        ),
+        help=("SQL code must return the result as 'value' (i.e. 'SELECT 5 AS value')."),
     )
     history_ids = fields.One2many(
         "kpi.history",

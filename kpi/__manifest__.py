@@ -20,6 +20,9 @@
         "views/menu.xml",
         "data/ir_cron.xml",
     ],
+    "demo": [
+        "demo/kpi_demo.xml",
+    ],
     "images": [
         "images/kpi_definition.png",
         "images/kpi_computation.png",

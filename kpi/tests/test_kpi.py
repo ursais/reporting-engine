@@ -1,5 +1,6 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+
 from odoo.tests.common import TransactionCase
 
 
@@ -8,6 +9,21 @@ class TestKPI(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.env = cls.env(context=dict(cls.env.context, tracking_disable=True))
+
+    def _create_kpi(self, **values):
+        category = self.env["kpi.category"].create({"name": "Test category"})
+        threshold = self.env["kpi.threshold"].create({"name": "Test threshold"})
+        defaults = {
+            "name": "Test KPI",
+            "category_id": category.id,
+            "threshold_id": threshold.id,
+            "periodicity": 1,
+            "periodicity_uom": "day",
+            "kpi_type": "python",
+            "kpi_code": "1.0",
+        }
+        defaults.update(values)
+        return self.env["kpi"].create(defaults)
 
     def test_invalid_threshold_range(self):
         range1 = self.env["kpi.threshold.range"].create(
@@ -87,6 +103,34 @@ class TestKPI(TransactionCase):
         self.assertFalse(threshold1.valid)
         self.assertTrue(threshold2.valid)
         self.assertFalse(threshold3.valid)
+
+    def test_threshold_create_with_range_commands(self):
+        """Threshold create accepts Odoo 19 many2many command format."""
+        range1 = self.env["kpi.threshold.range"].create(
+            {
+                "name": "Range A",
+                "min_type": "static",
+                "max_type": "static",
+                "min_fixed_value": 0,
+                "max_fixed_value": 5,
+            }
+        )
+        range2 = self.env["kpi.threshold.range"].create(
+            {
+                "name": "Range B",
+                "min_type": "static",
+                "max_type": "static",
+                "min_fixed_value": 6,
+                "max_fixed_value": 10,
+            }
+        )
+        threshold = self.env["kpi.threshold"].create(
+            {
+                "name": "Threshold commands",
+                "range_ids": [(6, 0, [range1.id, range2.id])],
+            }
+        )
+        self.assertTrue(threshold.valid)
 
     def test_invalid_threshold_range_exception(self):
         range_error = self.env["kpi.threshold.range"].create(

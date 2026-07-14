@@ -124,6 +124,46 @@ class TestCommentTemplate(common.TransactionCase):
         self.user._compute_comment_template_ids()
         self.assertIn(global_template, self.user.comment_template_ids)
 
+    def test_manual_comment_template_survives_same_partner_recompute(self):
+        """Manual selections must not be wiped by a same-partner recompute.
+
+        This mirrors print/flush flows that can re-trigger the stored compute
+        without a partner change and previously cleared comment_template_ids.
+        """
+        manual_template = self.env["base.comment.template"].create(
+            {
+                "name": "Manual only template",
+                "text": "Manual comment text",
+                "models": self.test_user_obj.model,
+                "company_id": self.company.id,
+                "global_template": False,
+            }
+        )
+        self.user.comment_template_ids = [
+            Command.link(self.before_template_id.id),
+            Command.link(manual_template.id),
+        ]
+        self.assertIn(manual_template, self.user.comment_template_ids)
+
+        self.user._compute_comment_template_ids()
+
+        self.assertIn(manual_template, self.user.comment_template_ids)
+        self.assertIn(self.before_template_id, self.user.comment_template_ids)
+        self.assertIn(self.after_template_id, self.user.comment_template_ids)
+
+    def test_partner_change_replaces_comment_templates(self):
+        """Changing partner replaces defaults; old partner templates are dropped."""
+        self.user.comment_template_ids = [
+            Command.set(
+                [self.before_template_id.id, self.after_template_id.id]
+            )
+        ]
+        self.partner2_id.base_comment_template_ids = [
+            Command.link(self.before_template_id.id),
+        ]
+        self.user.partner_id = self.partner2_id
+        self.assertEqual(self.user.comment_template_ids, self.before_template_id)
+
     def test_partner_template(self):
         self.partner2_id.base_comment_template_ids = [
             (4, self.before_template_id.id),
